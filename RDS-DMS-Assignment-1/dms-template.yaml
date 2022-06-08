@@ -1,0 +1,77 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: This Template create a RDS database
+
+Resources:
+  DataBaseSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subnet group for RDS database
+      SubnetIds:
+        - subnet-0f0f4c943e28811a2
+        - subnet-0c697c6d9124e8235
+      Tags:
+        - Key: Name
+          Value: database subnets
+
+  DatabaseInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      AllocatedStorage: 5
+#     AllowMajorVersionUpgrade: Boolean
+#     AssociatedRoles:
+#      - DBInstanceRole
+#     AutoMinorVersionUpgrade: Boolean
+      AvailabilityZone: !Select [ 0, !GetAZs '']
+      BackupRetentionPeriod: 0
+#    CACertificateIdentifier: String
+#    CharacterSetName: String
+#    CopyTagsToSnapshot: Boolean
+#    DBClusterIdentifier: String
+      DBInstanceClass: db.t4g.medium
+      DBInstanceIdentifier: mysqlwali
+      DBName: waliapplicationdb
+#    DBParameterGroupName: String
+#    DBSecurityGroups:
+#      - String
+#    DBSnapshotIdentifier: String
+      DBSubnetGroupName: !Ref DataBaseSubnetGroup
+#    DeleteAutomatedBackups: Boolean
+#    DeletionProtection: Boolean
+#    Domain: String
+#    DomainIAMRoleName: String
+#    EnableCloudwatchLogsExports:
+#      - String
+#    EnableIAMDatabaseAuthentication: Boolean
+#    EnablePerformanceInsights: Boolean
+      Engine: aurora-postgresql
+      EngineVersion: 13.4
+#    Iops: Integer
+#    KmsKeyId: String
+#    LicenseModel: String
+      MasterUsername: postgres2
+      MasterUserPassword: postgres
+#    MaxAllocatedStorage: Integer
+#    MonitoringInterval: Integer
+#    MonitoringRoleArn: String
+      MultiAZ: false
+#    OptionGroupName: String
+#    PerformanceInsightsKMSKeyId: String
+#    PerformanceInsightsRetentionPeriod: Integer
+#    Port: String
+#    PreferredBackupWindow: String
+#    PreferredMaintenanceWindow: String
+#    ProcessorFeatures:
+#      - ProcessorFeature
+#    PromotionTier: Integer
+#    PubliclyAccessible: Boolean
+#    SourceDBInstanceIdentifier: String
+#    SourceRegion: String
+#    StorageEncrypted: Boolean
+#    StorageType: String
+#    Tags:
+#      - Tag
+#    Timezone: String
+#    UseDefaultProcessorFeatures: Boolean
+      VPCSecurityGroups:
+        - sg-01879b91ed9a434e1

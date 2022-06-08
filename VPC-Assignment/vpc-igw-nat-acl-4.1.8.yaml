@@ -1,0 +1,275 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: This Template creates VPC with "Private" subnet. Then it added, attached an internet gateway along with a route table to allow traffic to and from instances.
+
+Parameters:
+  VpcCIDR:
+    Description: Please enter the IP range for this VPC
+    Type: String
+
+  PrivateSubnet1CIDR:
+    Description: 251 private IP addresses for us-east-1a
+    Type: String
+
+  PrivateSubnet2CIDR:
+    Description: 251 private IP addresses for us-east-1a
+    Type: String
+
+Resources:
+  # Create VPC
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCIDR
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: Assignment-VPC
+        - Key: user
+          Value: Admin
+        - Key: izaan-lesson
+          Value: lesson 4.1
+        - Key: izaan-lab
+          Value: lab 4.1.1
+
+  # DATA FOR PRIVATE SUBNET1 & INTERNET GATEWAY
+  # Create Private Subnet1
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: us-east-1a
+      CidrBlock: !Ref PrivateSubnet1CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: Assignment-Private-Subnet-1
+        - Key: user
+          Value: Admin
+        - Key: izaan-lesson
+          Value: lesson 4.1
+        - Key: izaan-lab
+          Value: lab 4.1.1
+      VpcId: !Ref VPC
+
+  # Create Internet Gateway
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Assignment-IGW
+
+  # Attach Internet Gateway to VPC
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+
+  # Create Route Table
+  PublicRouteTable1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Public Route Table 1
+      VpcId: !Ref VPC
+
+  # Add a Public Route to the Route Table
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+      RouteTableId: !Ref PublicRouteTable1
+
+  # Associate Private Subnet1 with Public Route Table
+  PrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable1
+      SubnetId: !Ref PrivateSubnet1
+
+# DATA FOR PRIVATE SUBNET2 & NAT GATEWAY
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: us-east-1b
+      CidrBlock: !Ref PrivateSubnet2CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: Assignment-Private-Subnet-2
+        - Key: user
+          Value: Admin
+        - Key: izaan-lesson
+          Value: lesson 4.1
+        - Key: izaan-lab
+          Value: lab 4.1.7
+      VpcId: !Ref VPC
+
+  # Allocate Elastic IP Address (EIP 1)
+  NatGateway1EIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: VPC
+      Tags:
+        - Key: Name
+          Value: EIP 1
+
+  # Create Nat Gateway 1 in Subnet 1
+  NatGateway1:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatGateway1EIP.AllocationId
+      SubnetId: !Ref PrivateSubnet1
+      Tags:
+        - Key: Name
+          Value: Nat Gateway Subnet 1
+
+  # Create Private Route Table 2
+  PrivateRouteTable2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Private Route Table 2
+      VpcId: !Ref VPC
+
+  # Add a route to point internet-bound traffic to Nat Gateway 1
+  PrivateRoute1:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway1
+      RouteTableId: !Ref PrivateRouteTable2
+
+  # Associate Private Subnet 2 with Private Route Table 1
+  PrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable2
+      SubnetId: !Ref PrivateSubnet2
+
+# DATA FOR NETWORK ACL FOR PUBLIC SUBNET
+
+  PublicNetworkACL:
+    Type: AWS::EC2::NetworkAcl
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: PublicNetwork-ACL
+
+  InboundSSHRule:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref PublicNetworkACL
+      RuleNumber: 100
+      Protocol: 6
+      RuleAction: allow
+      CidrBlock: 73.128.21.198/32
+      PortRange:
+        From: 22
+        To: 22
+
+  OutboundRule:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref PublicNetworkACL
+      RuleNumber: 100
+      Protocol: -1
+      RuleAction: allow
+      Egress: true
+      CidrBlock: 0.0.0.0/0
+
+  Subnet1NetworkAclAssociation:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet1
+      NetworkAclId: !Ref PublicNetworkACL
+
+# DATA FOR NETWORK ACL FOR PRIVATE SUBNET
+
+  PrivateNetworkACL:
+    Type: AWS::EC2::NetworkAcl
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: PrivateNetwork-ACL
+
+  Inbound2SSHRule:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref PrivateNetworkACL
+      RuleNumber: 200
+      Protocol: 6
+      RuleAction: allow
+      CidrBlock: !Ref PrivateSubnet1CIDR
+      PortRange:
+        From: 22
+        To: 22
+
+  Inbound2ICMPRule:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref PrivateNetworkACL
+      RuleNumber: 210
+      Protocol: 1
+      RuleAction: allow
+      CidrBlock: !Ref PrivateSubnet1CIDR
+      Icmp:
+        Code: -1
+        Type: -1
+  Inbound2HTTPRule:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref PrivateNetworkACL
+      RuleNumber: 220
+      Protocol: 6
+      RuleAction: allow
+      CidrBlock: !Ref PrivateSubnet1CIDR
+      PortRange:
+        From: 80
+        To: 80
+
+  Outbound2Rule:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref PrivateNetworkACL
+      RuleNumber: 200
+      Protocol: -1
+      RuleAction: allow
+      Egress: true
+      CidrBlock: 0.0.0.0/0
+
+  Subnet2NetworkAclAssociation:
+    Type: AWS::EC2::SubnetNetworkAclAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet2
+      NetworkAclId: !Ref PrivateNetworkACL
+
+Outputs:
+  # Export VPC ID
+  VPC:
+    Description: VPC ID
+    Export:
+      Name: Output-VPC
+    Value: !Ref VPC
+
+  # Export Private Subnet 1
+  PrivateSubnet1:
+    Description: Private Subnet 1 ID
+    Export:
+      Name: Output-PrivateSubnet1
+    Value: !Ref PrivateSubnet1
+
+  PrivateSubnet2:
+    Description: Private Subnet 2 ID
+    Export:
+      Name: Output-PrivateSubnet2
+    Value: !Ref PrivateSubnet2

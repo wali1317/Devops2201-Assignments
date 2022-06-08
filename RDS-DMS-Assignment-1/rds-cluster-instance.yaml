@@ -1,0 +1,75 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: This Template create a RDS cluster and Instance
+
+Parameters:
+  UserName:
+    Default: postgres
+    Description: MySQL database name
+    Type: String
+
+  Password:
+    Default: postgres
+    NoEcho: true
+    Type: String
+
+Resources:
+  DatabaseCluster:
+    Type: AWS::RDS::DBCluster
+    Properties:
+      DBClusterParameterGroupName:
+        Ref: RDSDBClusterParameterGroup
+      DBSubnetGroupName:
+        Ref: DBSubnetGroup
+      Engine: aurora-postgresql
+      MasterUserPassword:
+        Ref: Password
+      MasterUsername:
+        Ref: UserName
+
+  RDSDBClusterParameterGroup:
+    Type: AWS::RDS::DBClusterParameterGroup
+    Properties:
+      Description: "CloudFormation Aurora Postgres Cluster Parameter Group"
+      Family: aurora-postgresql13
+      Parameters:
+        timezone: US/Eastern
+
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subnet Group for RDS database
+      SubnetIds:
+        - subnet-0f0f4c943e28811a2
+        - subnet-0c697c6d9124e8235
+        - subnet-0fc83aa4f55afbc1f
+        - subnet-074afc00184308708
+        - subnet-00ab9c55bc35a6113
+        - subnet-00b044b8eb8aec4d2
+      Tags:
+        - Key: Name
+          Value: database subnets
+
+  RDSDBInstance1:
+    Type: "AWS::RDS::DBInstance"
+    Properties:
+      AvailabilityZone: us-east-1b
+      DBClusterIdentifier:
+        Ref: DatabaseCluster
+      DBInstanceClass: db.t4g.medium
+      DBParameterGroupName:
+        Ref: RDSDBParameterGroup
+      DBSubnetGroupName:
+        Ref: DBSubnetGroup
+      Engine: aurora-postgresql
+      PubliclyAccessible: "true"
+
+  RDSDBParameterGroup:
+    Type: 'AWS::RDS::DBParameterGroup'
+    Properties:
+      Description: CloudFormation Sample Aurora Parameter Group
+      Family: aurora-postgresql13
+#      Parameters:
+#        sql_mode: IGNORE_SPACE
+#        max_allowed_packet: 1024
+#        innodb_buffer_pool_size: '{DBInstanceClassMemory*3/4}'

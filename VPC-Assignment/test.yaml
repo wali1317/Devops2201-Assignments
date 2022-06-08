@@ -1,0 +1,77 @@
+# UNDER PARAMETER
+Parameters:
+  PrivateSubnet2CIDR:
+    Description: 251 private IP addresses for us-east-1a
+    Type: String
+
+# UNDER RESOURCE
+
+# Create Private Subnet2
+Resources:
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: us-east-1b
+      CidrBlock: !Ref PrivateSubnet2CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: Assignment-Private-Subnet-2
+        - Key: user
+          Value: Admin
+        - Key: izaan-lesson
+          Value: lesson 4.1
+        - Key: izaan-lab
+          Value: lab 4.1.7
+      VpcId: !Ref VPC
+
+# Allocate Elastic IP Address (EIP 1)
+  NatGateway1EIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: VPC
+        Tags:
+          - Key: Name
+            Value: EIP 1
+
+# Create Nat Gateway 1 in Subnet 1
+  NatGateway1:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatGateway1EIP.AllocationId
+      SubnetId: !Ref PrivateSubnet1
+      Tags:
+        - Key: Name
+          Value: Nat Gateway Subnet 1
+
+# Create Private Route Table 2
+  PrivateRouteTable2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Private Route Table 2
+    VpcId: !Ref VPC
+
+# Add a route to point internet-bound traffic to Nat Gateway 1
+  PrivateRoute1:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway1
+      RouteTableId: !Ref PrivateRouteTable2
+
+# Associate Private Subnet 2 with Private Route Table 1
+  PrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable2
+      SubnetId: !Ref PrivateSubnet2
+
+# Export Private Subnet 2
+Output:
+  PrivateSubnet2:
+    Description: Private Subnet 2 ID
+    Export:
+      Name: !Sub ${AWS::StackName}-PrivateSubnet2
+      Value: !Ref PrivateSubnet2

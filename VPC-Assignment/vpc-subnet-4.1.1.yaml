@@ -1,0 +1,66 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: This Template creates VPC with "Private" subnet
+
+Parameters:
+  VpcCIDR:
+    Default: 10.0.0.0/16
+    Description: Please enter the IP range for this VPC
+    Type: String
+
+  PublicSubnet1CIDR:
+    Default: 10.0.0.0/24
+    Description: 251 public IP addresses for us-east-1a
+    Type: String
+
+Resources:
+# Create VPC
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCIDR
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: Assignment-VPC
+        - Key: user
+          Value: Admin
+        - Key: izaan-lesson
+          Value: lesson 4.1
+        - Key: izaan-lab
+          Value: lab 4.1.1
+
+# Create Public Subnet1
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: us-east-1a
+      CidrBlock: !Ref PublicSubnet1CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: Assignment-Public-Subnet-1
+        - Key: user
+          Value: Admin
+        - Key: izaan-lesson
+          Value: lesson 4.1
+        - Key: izaan-lab
+          Value: lab 4.1.1
+      VpcId: !Ref VPC
+
+Outputs:
+# Export VPC ID
+  VPC:
+    Description: VPC ID
+    Export:
+      Name: !Sub ${AWS::StackName}-VPC
+    Value: !Ref VPC
+
+# Export Public Subnet 1
+  PublicSubnet1:
+    Description: Public Subnet 1 ID
+    Export:
+      Name: !Sub ${AWS::StackName}-PublicSubnet1
+    Value: !Ref PublicSubnet1

@@ -1,0 +1,104 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: This Template creates VPC with "Private" subnet. Then it added, attached an internet gateway along with a route table to allow traffic to and from instances.
+
+Parameters:
+  VpcCIDR:
+    Description: Please enter the IP range for this VPC
+    Type: String
+
+  PrivateSubnet1CIDR:
+    Description: 251 private IP addresses for us-east-1a
+    Type: String
+
+Resources:
+# Create VPC
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCIDR
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: Assignment-VPC
+        - Key: user
+          Value: Admin
+        - Key: izaan-lesson
+          Value: lesson 4.1
+        - Key: izaan-lab
+          Value: lab 4.1.1
+
+# Create Private Subnet1
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: us-east-1a
+      CidrBlock: !Ref PrivateSubnet1CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: Assignment-Private-Subnet-1
+        - Key: user
+          Value: Admin
+        - Key: izaan-lesson
+          Value: lesson 4.1
+        - Key: izaan-lab
+          Value: lab 4.1.1
+      VpcId: !Ref VPC
+
+# Create Internet Gateway
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Assignment-IGW
+
+# Attach Internet Gateway to VPC
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+
+# Create Route Table
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Public Route Table
+      VpcId: !Ref VPC
+
+# Add a Public Route to the Route Table
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+      RouteTableId: !Ref PublicRouteTable
+
+# Associate Private Subnet1 with Public Route Table
+  PrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PrivateSubnet1
+
+Outputs:
+# Export VPC ID
+  VPC:
+    Description: VPC ID
+    Export:
+      Name: Output-VPC
+    Value: !Ref VPC
+
+# Export Private Subnet 1
+  PublicSubnet1:
+    Description: Subnet 1 ID
+    Export:
+      Name: Output-PrivateSubnet1
+    Value: !Ref PrivateSubnet1
+

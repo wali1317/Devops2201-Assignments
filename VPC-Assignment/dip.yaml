@@ -1,0 +1,71 @@
+Description:  Creating a EC2 with import functions of VPCid and subnet id
+
+Parameters:
+  EC2Name:
+    Description: EC2s name
+    Type: String
+    Default: a4-ec2
+
+  Instancetype:
+    Description:  Free Instance type for EC2
+    Type: String
+    Default: t2.micro
+
+  Keypair:
+    Description: Key pair for EC2
+    Type: String
+    Default:  vpc-key-pair
+
+Mappings:
+  RegionMap:
+    us-east-1:
+      HVM64: "ami-0022f774911c1d690"
+      HVMG2: "ami-0e449176cecc3e577"
+    us-east-2:
+      HVM64: "ami-0fa49cc9dc8d62c84"
+      HVMG2: "ami-02cb75f995890cd96"
+Resources:
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId:
+        Fn::ImportValue: A4-VPCID
+      GroupDescription: Security group for allowing ICMP (for ping) and ssh traffic into your instance.
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 174.89.63.52/0
+        - IpProtocol: icmp
+          FromPort: 8
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+
+  EC2Instance:
+    Type: "AWS::EC2::Instance"
+    Properties:
+      SecurityGroupIds:
+        - Ref: SecurityGroup
+      ImageId: !FindInMap
+        - RegionMap
+        - !Ref 'AWS::Region'
+        - HVM64
+      InstanceType: !Ref Instancetype
+      KeyName: !Ref Keypair
+      SubnetId:
+        Fn::ImportValue: A4-SUBNETID
+      Tags:
+        - Key: Name
+          Value: !Ref EC2Name
+
+Outputs:
+  InstanceID:
+    Description: A reference to the created EC2 INSTANCE ID
+    Value: !Ref EC2Instance
+    Export:
+      Name: EC2-ID
+  PublicIp:
+    Description: Server Public IP
+    Value: !GetAtt EC2Instance.PublicIp
+    Export:
+      Name: !Sub "${AWS::StackName}-PublicIp"

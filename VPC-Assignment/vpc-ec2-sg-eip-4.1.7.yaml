@@ -1,0 +1,132 @@
+Description: Basic template that defines a single Amazon EC2 instance with security group added for ssh and icmp
+
+Parameters:
+  EC2Name1:
+    Description: EC2s name
+    Type: String
+    Default: 'vpcAssignmentEC2-1'
+
+  EC2Name2:
+    Description: EC2s name
+    Type: String
+    Default: 'vpcAssignmentEC2-2'
+
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+
+  InstanceType:
+    Description: WebServer EC2 instance type
+    Type: String
+    AllowedValues: [t2.micro]
+    ConstraintDescription: Must be a valid EC2 instance type.
+
+  LatestAmiId:
+    Type:  'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Description: Enter a valid ID
+
+Resources:
+
+  EC2Instance1:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      SecurityGroupIds:
+        - Ref: SecurityGroup1
+      KeyName: !Ref KeyName
+      ImageId: !Ref LatestAmiId
+      SubnetId:
+        Fn::ImportValue: wali1-PrivateSubnet1
+      Tags:
+        - Key: Name
+          Value: !Ref EC2Name1
+        - Key: user
+          Value: Admin
+        - Key: izaan-lesson
+          Value: lesson 4.1
+        - Key: izaan-lab
+          Value: lab 4.1.4
+
+  EC2Instance2:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      SecurityGroupIds:
+        - Ref: SecurityGroup2
+      KeyName: !Ref KeyName
+      ImageId: !Ref LatestAmiId
+      SubnetId:
+        Fn::ImportValue: wali1-PrivateSubnet2
+      Tags:
+        - Key: Name
+          Value: !Ref EC2Name2
+        - Key: user
+          Value: Admin
+        - Key: izaan-lesson
+          Value: lesson 4.1
+        - Key: izaan-lab
+          Value: lab 4.1.7
+
+  SecurityGroup1:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId:
+        Fn::ImportValue: wali1-VPC
+      GroupDescription: Security group for allowing ssh and ICMP into your instance.
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 73.128.21.198/32
+        - IpProtocol: icmp
+          FromPort: 8
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+
+  SecurityGroup2:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId:
+        Fn::ImportValue: wali1-VPC
+      GroupDescription: Security group for allowing ssh and ICMP into your instance.
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: icmp
+          FromPort: 8
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+
+  EIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      InstanceId: !Ref EC2Instance1
+
+Outputs:
+  InstanceId1:
+    Description: InstanceId of the newly created EC2 instance1
+    Value: !Ref EC2Instance1
+    Export:
+      Name: !Sub "${AWS::StackName}-Instance-Id-1"
+
+  PublicIp1:
+    Description: Server Public IP
+    Value: !GetAtt EC2Instance1.PublicIp
+    Export:
+      Name: !Sub "${AWS::StackName}-PublicIp1"
+
+  InstanceId2:
+    Description: InstanceId of the newly created EC2 instance1
+    Value: !Ref EC2Instance2
+    Export:
+      Name: !Sub "${AWS::StackName}-Instance-Id-2"
+
+  PrivateIp2:
+    Description: Server Public IP
+    Value: !GetAtt EC2Instance2.PrivateIp
+    Export:
+      Name: !Sub "${AWS::StackName}-PrivateIp2"
+

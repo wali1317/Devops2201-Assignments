@@ -1,0 +1,78 @@
+Description: Basic template that defines a single Amazon EC2 instance with security group added for ssh and icmp
+
+Parameters:
+  EC2Name:
+    Description: EC2s name
+    Type: String
+    Default: 'vpcAssignmentEC2-1'
+
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+
+  InstanceType:
+    Description: WebServer EC2 instance type
+    Type: String
+    AllowedValues: [t2.micro]
+    ConstraintDescription: Must be a valid EC2 instance type.
+
+  LatestAmiId:
+    Type:  'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Description: Enter a valid ID
+
+Resources:
+
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      SecurityGroupIds:
+        - Ref: SecurityGroup
+      KeyName: !Ref KeyName
+      ImageId: !Ref LatestAmiId
+      SubnetId:
+        Fn::ImportValue: vpc-igw-1-PrivateSubnet1
+      Tags:
+        - Key: Name
+          Value: !Ref EC2Name
+        - Key: user
+          Value: Admin
+        - Key: izaan-lesson
+          Value: lesson 4.1
+        - Key: izaan-lab
+          Value: lab 4.1.4
+
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId:
+        Fn::ImportValue: vpc-igw-1-VPC
+      GroupDescription: Security group for allowing ssh and ICMP into your instance.
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 73.128.21.198/32
+        - IpProtocol: icmp
+          FromPort: 8
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+
+  EIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      InstanceId: !Ref EC2Instance
+
+Outputs:
+  InstanceId:
+    Description: InstanceId of the newly created EC2 instance
+    Value: !Ref EC2Instance
+    Export:
+      Name: !Sub "${AWS::StackName}-Instance-Id"
+
+  PublicIp:
+    Description: Server Public IP
+    Value: !GetAtt EC2Instance.PublicIp
+    Export:
+      Name: !Sub "${AWS::StackName}-PublicIp"

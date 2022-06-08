@@ -1,0 +1,58 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: This Template create a RDS database
+
+Resources:
+  DataBaseSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subnet group for RDS database
+      SubnetIds:
+        - subnet-0f0f4c943e28811a2
+        - subnet-0c697c6d9124e8235
+      Tags:
+        - Key: Name
+          Value: database subnets
+
+  DatabaseCluster:
+    Type: AWS::RDS::DBCluster
+    Properties:
+#      AssociatedRoles:
+#        - DBClusterRole
+      AvailabilityZones:
+        - !Select [ 0, !GetAZs '']
+#      BacktrackWindow: Long
+      BackupRetentionPeriod: 1
+#      CopyTagsToSnapshot: Boolean
+      DatabaseName: walidatabase
+      DBClusterIdentifier: wali-cluster
+#      DBClusterParameterGroupName: String
+      DBSubnetGroupName: !Ref DataBaseSubnetGroup
+#      DeletionProtection: Boolean
+#      EnableCloudwatchLogsExports:
+        - String
+#      EnableHttpEndpoint: Boolean
+#      EnableIAMDatabaseAuthentication: Boolean
+      Engine: aurora-postgresql
+#      EngineMode: String
+      EngineVersion: 13.4
+#      GlobalClusterIdentifier: String
+#      KmsKeyId: String
+      MasterUsername: postgres2
+      MasterUserPassword: postgres
+#      Port: Integer
+#      PreferredBackupWindow: String
+#      PreferredMaintenanceWindow: String
+#      ReplicationSourceIdentifier: String
+#      RestoreType: String
+#      ScalingConfiguration:
+#        ScalingConfiguration
+#      SnapshotIdentifier: String
+#      SourceDBClusterIdentifier: String
+#      SourceRegion: String
+#      StorageEncrypted: Boolean
+#      Tags:
+#        - Tag
+#      UseLatestRestorableTime: Boolean
+      VpcSecurityGroupIds:
+        - sg-01879b91ed9a434e1
